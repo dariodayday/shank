@@ -12,6 +12,10 @@
  * `playerId` — the mapping happens right here so nothing else has to care. */
 const sb = supabase.createClient(window.SHANK_CONFIG.url, window.SHANK_CONFIG.key);
 
+// The signed-in Supabase session (null = browsing as a guest).
+let session = null;
+sb.auth.onAuthStateChange((_evt, s) => { session = s; });
+
 const Store = {
   cache: { players: [], rounds: [] },
 
@@ -29,7 +33,7 @@ const Store = {
     ]);
     if (pRes.error) throw pRes.error;
     if (rRes.error) throw rRes.error;
-    this.cache.players = (pRes.data || []).map(p => ({ id: p.id, name: p.name }));
+    this.cache.players = (pRes.data || []).map(p => ({ id: p.id, name: p.name, userId: p.user_id }));
     this.cache.rounds = (rRes.data || []).map(r => ({
       id: r.id, playerId: r.player_id, score: r.score,
       par: r.par, course: r.course, date: r.date,
@@ -40,13 +44,16 @@ const Store = {
   rounds() { return this.cache.rounds; },
 
   async addPlayer(name) {
-    const p = { id: this.newId(), name: name.trim() };
-    const { error } = await sb.from('players').insert({ id: p.id, name: p.name });
+    const p = { id: this.newId(), name: name.trim(), userId: session?.user?.id || null };
+    const { error } = await sb.from('players').insert({ id: p.id, name: p.name, user_id: p.userId });
     if (error) throw error;
     this.cache.players.push(p);
     return p;
   },
   async removePlayer(id) {
+    // Rounds first so nothing orphans if the player delete fails.
+    const { error: rErr } = await sb.from('rounds').delete().eq('player_id', id);
+    if (rErr) throw rErr;
     const { error } = await sb.from('players').delete().eq('id', id);
     if (error) throw error;
     this.cache.players = this.cache.players.filter(p => p.id !== id);
@@ -176,8 +183,81 @@ function renderRecords() {
     </div>`).join('');
 }
 
+/* ---------- Auth ---------- */
+function myPlayer() {
+  return session ? Store.players().find(p => p.userId === session.user.id) : null;
+}
+
+function updateAuthUI() {
+  const btn = document.getElementById('auth-btn');
+  if (session) {
+    const me = myPlayer();
+    btn.textContent = me ? me.name : 'Account';
+  } else {
+    btn.textContent = 'Sign in';
+  }
+}
+
+document.getElementById('auth-btn').addEventListener('click', async () => {
+  if (!session) return show('auth');
+  if (confirm('Sign out of Shank?')) {
+    await sb.auth.signOut();
+    location.reload();
+  }
+});
+
+let authMode = 'signup';
+function setAuthMode(mode) {
+  authMode = mode;
+  document.getElementById('auth-title').textContent = mode === 'signup' ? 'Join the crew' : 'Welcome back';
+  document.getElementById('auth-sub').textContent = mode === 'signup'
+    ? 'Create your account — your name goes on the board.'
+    : 'Sign in to log your rounds.';
+  document.getElementById('auth-name-field').classList.toggle('hidden', mode !== 'signup');
+  document.getElementById('auth-submit').textContent = mode === 'signup' ? 'Create account' : 'Sign in';
+  document.getElementById('auth-switch-label').textContent = mode === 'signup' ? 'Already have an account?' : 'New here?';
+  document.getElementById('auth-toggle').textContent = mode === 'signup' ? 'Sign in' : 'Sign up';
+}
+document.getElementById('auth-toggle').addEventListener('click', () =>
+  setAuthMode(authMode === 'signup' ? 'signin' : 'signup'));
+
+document.getElementById('auth-form').addEventListener('submit', async e => {
+  e.preventDefault();
+  const msg = document.getElementById('auth-msg');
+  const btn = document.getElementById('auth-submit');
+  const email = document.getElementById('auth-email').value.trim();
+  const password = document.getElementById('auth-password').value;
+  const name = document.getElementById('auth-name').value.trim();
+  if (authMode === 'signup' && !name) return flash(msg, 'Pick a name for the board.', 'err');
+  btn.disabled = true;
+  try {
+    if (authMode === 'signup') {
+      const { data, error } = await sb.auth.signUp({ email, password });
+      if (error) throw error;
+      if (!data.session) {
+        // Email confirmations are on in Supabase: account made, not signed in yet.
+        msg.textContent = 'Check your email to confirm your account, then sign in.';
+        msg.className = 'form-msg ok';
+        return;
+      }
+      session = data.session;
+      await Store.addPlayer(name);
+    } else {
+      const { error } = await sb.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+    }
+    location.reload(); // fresh data + replays the splash
+  } catch (err) {
+    flash(msg, err.message || 'Something went wrong.', 'err');
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+document.getElementById('add-gate-btn').addEventListener('click', () => show('auth'));
+
 /* ---------- Navigation ---------- */
-const views = ['leaderboard', 'add', 'players', 'detail'];
+const views = ['leaderboard', 'add', 'players', 'detail', 'auth'];
 function show(view, ctx) {
   views.forEach(v => document.getElementById('view-' + v).classList.toggle('hidden', v !== view));
   document.querySelectorAll('.tab').forEach(t => {
@@ -198,6 +278,11 @@ document.querySelector('.brand').addEventListener('click', () => location.reload
 
 /* ---------- Version history ---------- */
 const CHANGELOG = [
+  { v: '0.5.0', title: 'Get your own account', notes: [
+    'Sign up with email + password — your name, your scores',
+    'Only you can log or delete your own rounds',
+    'Anyone with the link can still view the board',
+  ]},
   { v: '0.4.0', title: 'The glow-up', notes: [
     'Whole new look: fancy fonts, medal rank badges, frosted tab bar',
     'Opening animation — tee shot straight into your face',
@@ -257,7 +342,7 @@ function renderLeaderboard() {
     list.innerHTML = `
       <div class="demo-banner">
         <p><strong>No rounds yet</strong> — here's a sneak peek of your board.</p>
-        <button class="btn btn-primary btn-small" id="demo-cta">Add your crew</button>
+        <button class="btn btn-primary btn-small" id="demo-cta">${session ? 'Log a round' : 'Join the board'}</button>
       </div>` + DEMO_BOARD.map((s, i) => `
       <div class="card demo">
         <div class="rank rank-${i + 1}">${i === 0 ? '🥇' : i + 1}</div>
@@ -270,7 +355,7 @@ function renderLeaderboard() {
           <div class="lbl">hcp</div>
         </div>
       </div>`).join('');
-    document.getElementById('demo-cta').addEventListener('click', () => show('players'));
+    document.getElementById('demo-cta').addEventListener('click', () => show(session ? 'add' : 'auth'));
     renderRecords();
     return;
   }
@@ -295,6 +380,9 @@ function renderPlayers() {
   const list = document.getElementById('players-list');
   const empty = document.getElementById('players-empty');
   const players = Store.players();
+  // The claim-a-name form only shows for signed-in users without a player
+  // (normally the player is created at signup; this is the fallback).
+  document.getElementById('player-form').classList.toggle('hidden', !(session && !myPlayer()));
   empty.classList.toggle('hidden', players.length > 0);
   list.innerHTML = players.map(p => {
     const s = playerSummary(p);
@@ -314,8 +402,9 @@ function renderDetail(id) {
   const p = Store.players().find(x => x.id === id);
   if (!p) return show('players');
   show.lastDetail = id;
+  const mine = !!(session && p.userId === session.user.id);
   const s = playerSummary(p);
-  document.getElementById('detail-name').textContent = p.name;
+  document.getElementById('detail-name').textContent = p.name + (mine ? ' (you)' : '');
   document.getElementById('detail-stats').innerHTML = `
     <div class="stat"><div class="num">${s.hcp ?? '—'}</div><div class="lbl">Handicap</div></div>
     <div class="stat"><div class="num">${s.rounds}</div><div class="lbl">Rounds played</div></div>
@@ -354,7 +443,7 @@ function renderDetail(id) {
           <div class="round-score">${r.score} <span class="over-par ${cls}">${over}</span></div>
           <div class="round-info">${esc(r.course || 'Unknown course')} · ${fmtDate(r.date)}</div>
         </div>
-        <button class="round-del" data-round="${r.id}" title="Delete round">✕</button>
+        ${mine ? `<button class="round-del" data-round="${r.id}" title="Delete round">✕</button>` : ''}
       </div>`;
     }).join('');
     box.querySelectorAll('.round-del').forEach(b => {
@@ -366,7 +455,9 @@ function renderDetail(id) {
       });
     });
   }
-  document.getElementById('detail-delete').onclick = async () => {
+  const delBtn = document.getElementById('detail-delete');
+  delBtn.classList.toggle('hidden', !mine);
+  delBtn.onclick = !mine ? null : async () => {
     if (confirm(`Remove ${p.name} and all their rounds? This can't be undone.`)) {
       try {
         await Store.removePlayer(p.id);
@@ -384,11 +475,13 @@ function bindPlayerTaps(container) {
 
 /* ---------- Add Round form ---------- */
 function prepAddForm() {
+  const me = myPlayer();
+  document.getElementById('add-gate').classList.toggle('hidden', !!me);
+  document.getElementById('round-form').classList.toggle('hidden', !me);
+  if (!me) return;
+  // You log your own rounds — the player is always you.
   const sel = document.getElementById('round-player');
-  const players = Store.players();
-  sel.innerHTML = players.length
-    ? players.map(p => `<option value="${p.id}">${esc(p.name)}</option>`).join('')
-    : '<option value="" disabled selected>Add a player first →</option>';
+  sel.innerHTML = `<option value="${me.id}">${esc(me.name)}</option>`;
   const dateInput = document.getElementById('round-date');
   if (!dateInput.value) dateInput.value = todayStr();
 }
@@ -431,6 +524,7 @@ document.getElementById('player-form').addEventListener('submit', async e => {
     await Store.addPlayer(name);
     input.value = '';
     renderPlayers();
+    updateAuthUI();
   } catch (err) {
     alert('Could not add player: ' + err.message);
   } finally {
@@ -482,7 +576,10 @@ async function boot() {
   const sub = document.getElementById('leaderboard-sub');
   sub.textContent = 'Loading the crew from the cloud…';
   try {
+    const { data } = await sb.auth.getSession();
+    session = data.session;
     await Store.init();
+    updateAuthUI();
     sub.textContent = 'Ranked by handicap — lowest wins.';
     show('leaderboard');
   } catch (err) {

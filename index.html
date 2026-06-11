@@ -36,7 +36,7 @@
       <span class="brand-mark">⛳</span>
       <span class="brand-name">Shank</span>
     </div>
-    <span class="brand-tag">own your bad shots</span>
+    <button id="auth-btn" class="auth-btn">Sign in</button>
   </header>
 
   <main id="app">
@@ -60,6 +60,11 @@
     <!-- ===== ADD ROUND VIEW ===== -->
     <section id="view-add" class="view hidden">
       <h1 class="view-title">Add a Round</h1>
+      <div id="add-gate" class="empty hidden">
+        <p class="empty-emoji">🔒</p>
+        <p>You need an account to log rounds.</p>
+        <button type="button" class="btn btn-primary btn-small" id="add-gate-btn">Sign in</button>
+      </div>
       <form id="round-form" class="form">
         <label class="field">
           <span>Player</span>
@@ -91,15 +96,38 @@
     <!-- ===== PLAYERS VIEW ===== -->
     <section id="view-players" class="view hidden">
       <h1 class="view-title">Players</h1>
-      <form id="player-form" class="form form-inline">
-        <input id="player-name" type="text" placeholder="Add a buddy's name" maxlength="20" required />
-        <button type="submit" class="btn btn-primary">Add</button>
+      <form id="player-form" class="form form-inline hidden">
+        <input id="player-name" type="text" placeholder="Your name on the board" maxlength="20" required />
+        <button type="submit" class="btn btn-primary">Join</button>
       </form>
       <div id="players-list" class="card-list"></div>
       <div id="players-empty" class="empty hidden">
         <p class="empty-emoji">👥</p>
-        <p>No players yet — add your crew above.</p>
+        <p>No players yet — sign up and your name appears here.</p>
       </div>
+    </section>
+
+    <!-- ===== AUTH VIEW ===== -->
+    <section id="view-auth" class="view hidden">
+      <h1 class="view-title" id="auth-title">Join the crew</h1>
+      <p class="view-sub" id="auth-sub">Create your account — your name goes on the board.</p>
+      <form id="auth-form" class="form">
+        <label class="field" id="auth-name-field">
+          <span>Name on the board</span>
+          <input id="auth-name" type="text" maxlength="20" placeholder="e.g. Dayday" />
+        </label>
+        <label class="field">
+          <span>Email</span>
+          <input id="auth-email" type="email" required autocomplete="email" placeholder="you@example.com" />
+        </label>
+        <label class="field">
+          <span>Password</span>
+          <input id="auth-password" type="password" minlength="6" required autocomplete="current-password" placeholder="6+ characters" />
+        </label>
+        <button type="submit" class="btn btn-primary" id="auth-submit">Create account</button>
+        <p id="auth-msg" class="form-msg"></p>
+        <p class="auth-switch"><span id="auth-switch-label">Already have an account?</span> <button type="button" id="auth-toggle">Sign in</button></p>
+      </form>
     </section>
 
     <!-- ===== PLAYER DETAIL VIEW ===== -->
@@ -127,7 +155,7 @@
     </button>
   </nav>
 
-  <footer class="footer"><button id="version-btn">Shank v0.4.0</button> · shared with your crew</footer>
+  <footer class="footer"><button id="version-btn">Shank v0.5.0</button> · shared with your crew</footer>
 
   <!-- Version history sheet -->
   <div id="changelog-overlay" class="overlay hidden">
