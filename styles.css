@@ -1,27 +1,35 @@
 /* ===== Shank — mobile-first golf tracker ===== */
 :root {
-  --green: #0b6b3a;
-  --green-dark: #084f2b;
+  --green: #0a5c33;
+  --green-dark: #06401f;
   --green-light: #1f8a4c;
-  --fairway: #e8f3ea;
-  --cream: #faf8f2;
-  --ink: #16241b;
-  --muted: #6b7d70;
-  --line: #dfe6e0;
-  --gold: #e0b341;
+  --green-bright: #27a35b;
+  --fairway: #e6f2e9;
+  --cream: #f7f5ee;
+  --ink: #14211a;
+  --muted: #67786c;
+  --line: #e3e9e2;
+  --gold: #d4a72c;
+  --gold-soft: #fdf3d7;
+  --silver: #eef1f4;
+  --bronze: #f6ebdd;
   --danger: #c0392b;
-  --shadow: 0 2px 10px rgba(8, 60, 30, 0.08);
-  --radius: 14px;
+  --shadow: 0 1px 2px rgba(8, 60, 30, 0.05), 0 6px 18px rgba(8, 60, 30, 0.07);
+  --shadow-lift: 0 2px 4px rgba(8, 60, 30, 0.07), 0 10px 28px rgba(8, 60, 30, 0.12);
+  --radius: 16px;
+  --font-display: "Fraunces", Georgia, serif;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  background: var(--cream);
+  font-family: "Outfit", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background:
+    radial-gradient(900px 360px at 50% -120px, rgba(31, 138, 76, 0.10), transparent 70%),
+    var(--cream);
   color: var(--ink);
   -webkit-font-smoothing: antialiased;
-  padding-bottom: 90px; /* room for tabbar */
+  padding-bottom: 96px; /* room for tabbar */
   min-height: 100vh;
 }
 
@@ -31,29 +39,49 @@ small.muted { font-weight: 400; }
 
 /* ===== Top bar ===== */
 .topbar {
-  background: linear-gradient(135deg, var(--green), var(--green-dark));
+  background:
+    radial-gradient(600px 200px at 85% -60px, rgba(212, 167, 44, 0.18), transparent 70%),
+    radial-gradient(500px 220px at 0% 120%, rgba(39, 163, 91, 0.25), transparent 70%),
+    linear-gradient(135deg, var(--green), var(--green-dark));
   color: #fff;
-  padding: calc(env(safe-area-inset-top) + 14px) 18px 14px;
+  padding: calc(env(safe-area-inset-top) + 16px) 20px 16px;
   display: flex;
   align-items: baseline;
   justify-content: space-between;
   position: sticky;
   top: 0;
   z-index: 10;
+  box-shadow: 0 2px 14px rgba(6, 64, 31, 0.25);
 }
-.brand { display: flex; align-items: center; gap: 8px; }
-.brand-mark { font-size: 22px; }
-.brand-name { font-size: 22px; font-weight: 800; letter-spacing: -0.5px; }
-.brand-tag { font-size: 12px; opacity: 0.8; font-style: italic; }
+.brand { display: flex; align-items: center; gap: 9px; cursor: pointer; }
+.brand:active { opacity: .8; }
+.brand-mark { font-size: 23px; filter: drop-shadow(0 1px 2px rgba(0,0,0,.25)); }
+.brand-name {
+  font-family: var(--font-display);
+  font-size: 25px; font-weight: 900; letter-spacing: -0.3px;
+}
+.brand-tag { font-size: 12px; opacity: 0.85; font-style: italic; color: #f3e3ae; }
 
 /* ===== Views ===== */
-main { max-width: 560px; margin: 0 auto; padding: 18px 16px; }
-.view-title { font-size: 26px; font-weight: 800; letter-spacing: -0.6px; }
-.view-sub { color: var(--muted); margin-top: 4px; font-size: 14px; }
-.section-h { font-size: 16px; margin: 22px 0 10px; color: var(--green-dark); }
+main { max-width: 560px; margin: 0 auto; padding: 22px 16px; }
+.view { animation: view-in .28s ease both; }
+@keyframes view-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: none; }
+}
+.view-title {
+  font-family: var(--font-display);
+  font-size: 30px; font-weight: 900; letter-spacing: -0.4px;
+  color: var(--green-dark);
+}
+.view-sub { color: var(--muted); margin-top: 5px; font-size: 14px; }
+.section-h {
+  font-family: var(--font-display);
+  font-size: 18px; font-weight: 700; margin: 26px 0 12px; color: var(--green-dark);
+}
 
 /* ===== Cards / lists ===== */
-.card-list { display: flex; flex-direction: column; gap: 10px; margin-top: 16px; }
+.card-list { display: flex; flex-direction: column; gap: 10px; margin-top: 18px; }
 .card {
   background: #fff;
   border: 1px solid var(--line);
@@ -67,103 +95,430 @@ main { max-width: 560px; margin: 0 auto; padding: 18px 16px; }
 
 /* Leaderboard row */
 .rank {
-  font-size: 18px; font-weight: 800; width: 30px; text-align: center;
+  font-size: 15px; font-weight: 800;
+  width: 34px; height: 34px; flex: none;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 50%;
+  background: var(--fairway);
   color: var(--green);
 }
-.rank-1 { color: var(--gold); }
+.rank-1 { background: var(--gold-soft); font-size: 19px; box-shadow: 0 0 0 2px rgba(212, 167, 44, .45); }
+.rank-2 { background: var(--silver); color: #5d6b78; box-shadow: 0 0 0 2px rgba(140, 155, 170, .35); }
+.rank-3 { background: var(--bronze); color: #a06a2c; box-shadow: 0 0 0 2px rgba(176, 124, 66, .35); }
 .lb-main { flex: 1; min-width: 0; }
 .lb-name { font-weight: 700; font-size: 16px; }
-.lb-meta { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.lb-meta { font-size: 12.5px; color: var(--muted); margin-top: 2px; }
 .lb-hcp { text-align: right; }
-.lb-hcp .num { font-size: 20px; font-weight: 800; color: var(--green-dark); }
-.lb-hcp .lbl { font-size: 10px; text-transform: uppercase; color: var(--muted); letter-spacing: .5px; }
+.lb-hcp .num {
+  font-family: var(--font-display);
+  font-size: 23px; font-weight: 900; color: var(--green-dark); line-height: 1.1;
+}
+.lb-hcp .lbl { font-size: 10px; text-transform: uppercase; color: var(--muted); letter-spacing: .8px; font-weight: 600; }
 
 /* tappable */
-.card.tappable { cursor: pointer; transition: transform .06s ease; }
-.card.tappable:active { transform: scale(0.99); }
-.chev { color: var(--muted); font-size: 18px; }
+.card.tappable { cursor: pointer; transition: transform .12s ease, box-shadow .12s ease, border-color .12s ease; }
+.card.tappable:hover { transform: translateY(-1px); box-shadow: var(--shadow-lift); border-color: #cfdcd2; }
+.card.tappable:active { transform: scale(0.99); box-shadow: var(--shadow); }
+.chev { color: #b9c5bc; font-size: 20px; }
 
 /* ===== Forms ===== */
-.form { display: flex; flex-direction: column; gap: 14px; margin-top: 18px; }
+.form { display: flex; flex-direction: column; gap: 15px; margin-top: 20px; }
 .field { display: flex; flex-direction: column; gap: 6px; }
 .field > span { font-size: 13px; font-weight: 600; color: var(--green-dark); }
 .field-row { display: flex; gap: 12px; }
 .field-row .field { flex: 1; }
 input, select {
   font-size: 16px; /* prevents iOS zoom */
-  padding: 12px 14px;
-  border: 1px solid var(--line);
+  padding: 13px 14px;
+  border: 1.5px solid var(--line);
   border-radius: 12px;
   background: #fff;
   color: var(--ink);
   width: 100%;
   font-family: inherit;
+  transition: border-color .15s ease, box-shadow .15s ease;
 }
-input:focus, select:focus { outline: none; border-color: var(--green-light); box-shadow: 0 0 0 3px rgba(31,138,76,.15); }
+input::placeholder { color: #a9b6ac; }
+input:focus, select:focus { outline: none; border-color: var(--green-light); box-shadow: 0 0 0 4px rgba(31,138,76,.14); }
 .form-inline { flex-direction: row; align-items: center; }
 .form-inline input { flex: 1; }
 
 /* ===== Buttons ===== */
 .btn {
   font-size: 16px; font-weight: 700; font-family: inherit;
-  padding: 13px 18px; border-radius: 12px; border: none;
-  cursor: pointer; transition: transform .06s ease, opacity .2s;
+  padding: 14px 20px; border-radius: 13px; border: none;
+  cursor: pointer; transition: transform .12s ease, box-shadow .15s ease, filter .15s ease;
 }
-.btn:active { transform: scale(0.98); }
-.btn-primary { background: var(--green); color: #fff; }
-.btn-danger { background: #fff; color: var(--danger); border: 1px solid var(--danger); }
-.btn-block { width: 100%; margin-top: 24px; }
+.btn:active { transform: scale(0.97); }
+.btn-primary {
+  background: linear-gradient(160deg, var(--green-bright), var(--green));
+  color: #fff;
+  box-shadow: 0 4px 14px rgba(10, 92, 51, .30);
+}
+.btn-primary:hover { filter: brightness(1.06); box-shadow: 0 6px 18px rgba(10, 92, 51, .35); }
+.btn-danger { background: #fff; color: var(--danger); border: 1.5px solid #eccfcb; box-shadow: none; }
+.btn-danger:hover { border-color: var(--danger); background: #fdf5f4; }
+.btn-block { width: 100%; margin-top: 26px; }
+.btn:disabled { opacity: .6; cursor: default; }
 .form-msg { font-size: 14px; min-height: 18px; text-align: center; }
 .form-msg.ok { color: var(--green-light); font-weight: 600; }
 .form-msg.err { color: var(--danger); }
 
 .back-btn {
   background: none; border: none; color: var(--green); font-size: 15px;
-  font-weight: 600; cursor: pointer; padding: 0 0 8px; font-family: inherit;
+  font-weight: 600; cursor: pointer; padding: 0 0 10px; font-family: inherit;
 }
+.back-btn:hover { color: var(--green-dark); }
 
 /* ===== Stat grid (player detail) ===== */
-.stat-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 16px; }
+.stat-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 18px; }
 .stat {
   background: #fff; border: 1px solid var(--line); border-radius: var(--radius);
-  padding: 14px; box-shadow: var(--shadow);
+  padding: 16px; box-shadow: var(--shadow);
 }
-.stat .num { font-size: 24px; font-weight: 800; color: var(--green-dark); }
-.stat .lbl { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.stat .num {
+  font-family: var(--font-display);
+  font-size: 27px; font-weight: 900; color: var(--green-dark); line-height: 1.1;
+}
+.stat .lbl { font-size: 12px; color: var(--muted); margin-top: 4px; font-weight: 500; }
 
 /* round history row */
 .round-row { justify-content: space-between; }
 .round-score { font-size: 18px; font-weight: 800; }
-.round-info { font-size: 13px; color: var(--muted); }
-.over-par { font-weight: 700; }
+.round-info { font-size: 13px; color: var(--muted); margin-top: 1px; }
+.over-par { font-weight: 700; font-size: 14px; }
 .over-par.pos { color: var(--danger); }
 .over-par.neg { color: var(--green-light); }
 
+/* ===== Season records ===== */
+#records-section { margin-top: 30px; }
+.records-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+.record {
+  background: #fff; border: 1px solid var(--line); border-radius: var(--radius);
+  padding: 14px 12px; box-shadow: var(--shadow); display: flex; gap: 10px; align-items: flex-start;
+}
+.record-ico { font-size: 23px; line-height: 1.2; }
+.record-body { min-width: 0; }
+.record-label { font-size: 10.5px; text-transform: uppercase; letter-spacing: .6px; color: var(--muted); font-weight: 700; }
+.record-who { font-size: 15px; font-weight: 700; color: var(--ink); margin-top: 3px; }
+.record-val { font-size: 13px; color: var(--green-light); font-weight: 600; margin-top: 1px; }
+
+/* ===== Recent form chips ===== */
+.form-strip { margin-top: 20px; }
+.form-label { font-size: 11px; text-transform: uppercase; letter-spacing: .6px; color: var(--muted); font-weight: 700; }
+.form-chips { display: flex; gap: 6px; margin-top: 8px; }
+.form-chip {
+  min-width: 36px; text-align: center; padding: 7px 9px; border-radius: 10px;
+  font-weight: 700; font-size: 14px; background: var(--fairway); color: var(--green-dark);
+}
+.form-chip.pos { background: #fbeae7; color: var(--danger); }
+.form-chip.neg { background: #e0f4e8; color: var(--green-light); }
+
+/* ===== Single-round delete ===== */
+.round-del {
+  background: none; border: none; color: #b9c5bc; font-size: 16px;
+  cursor: pointer; padding: 6px 8px; border-radius: 8px; line-height: 1; font-family: inherit;
+  transition: color .12s ease, background .12s ease;
+}
+.round-del:hover { color: var(--danger); background: #fbeae7; }
+.round-del:active { background: #f6d9d4; color: var(--danger); }
+
+/* ===== Demo board (before any real rounds) ===== */
+.demo-banner {
+  background: var(--fairway); border: 1px solid #d3e6d8; border-radius: var(--radius);
+  padding: 16px; text-align: center;
+  display: flex; flex-direction: column; gap: 10px; align-items: center;
+}
+.demo-banner p { font-size: 14px; color: var(--ink); }
+.btn-small { padding: 10px 18px; font-size: 14px; }
+.card.demo { opacity: .72; border-style: dashed; box-shadow: none; }
+.demo-chip {
+  font-size: 9px; text-transform: uppercase; letter-spacing: .5px; font-weight: 700;
+  background: var(--fairway); color: var(--green); border-radius: 6px;
+  padding: 2px 6px; margin-left: 7px; vertical-align: 2px;
+}
+
 /* ===== Empty states ===== */
-.empty { text-align: center; padding: 50px 20px; color: var(--muted); }
-.empty-emoji { font-size: 44px; margin-bottom: 10px; }
+.empty { text-align: center; padding: 54px 20px; color: var(--muted); }
+.empty-emoji { font-size: 46px; margin-bottom: 12px; }
 .empty p { margin: 4px 0; }
 
 /* ===== Bottom tab bar ===== */
 .tabbar {
   position: fixed; bottom: 0; left: 0; right: 0;
-  background: #fff; border-top: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.86);
+  -webkit-backdrop-filter: blur(14px) saturate(1.4);
+  backdrop-filter: blur(14px) saturate(1.4);
+  border-top: 1px solid var(--line);
   display: flex; justify-content: space-around;
   padding: 8px 0 calc(env(safe-area-inset-bottom) + 8px);
   z-index: 20;
 }
 .tab {
   background: none; border: none; cursor: pointer; font-family: inherit;
-  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
   color: var(--muted); font-size: 11px; font-weight: 600; flex: 1; padding: 4px;
+  transition: color .15s ease;
 }
-.tab-ico { font-size: 20px; }
-.tab.is-active { color: var(--green); }
+.tab-ico { font-size: 20px; transition: transform .15s ease; }
+.tab.is-active { color: var(--green); font-weight: 700; }
+.tab.is-active .tab-ico { transform: translateY(-1px); }
 .tab-add .tab-ico {
-  background: var(--green); color: #fff; width: 38px; height: 38px;
+  background: linear-gradient(160deg, var(--green-bright), var(--green));
+  color: #fff; width: 42px; height: 42px;
   border-radius: 50%; display: flex; align-items: center; justify-content: center;
-  font-size: 24px; margin-top: -14px; box-shadow: 0 3px 8px rgba(11,107,58,.35);
+  font-size: 24px; margin-top: -18px;
+  border: 3px solid var(--cream);
+  box-shadow: 0 4px 12px rgba(10, 92, 51, .38);
 }
 .tab-add.is-active { color: var(--green); }
+.tab-add:active .tab-ico { transform: scale(0.94); }
 
-.footer { text-align: center; color: var(--muted); font-size: 11px; padding: 8px 0 4px; }
+.footer { text-align: center; color: var(--muted); font-size: 11px; padding: 10px 0 4px; }
+#version-btn {
+  background: none; border: none; font: inherit; color: var(--green);
+  cursor: pointer; padding: 0; font-weight: 600;
+  text-decoration: underline dotted; text-underline-offset: 2px;
+}
+
+/* ===== Overlay + bottom sheet (version history) ===== */
+.overlay {
+  position: fixed; inset: 0; z-index: 50;
+  background: rgba(8, 40, 22, .45);
+  -webkit-backdrop-filter: blur(3px);
+  backdrop-filter: blur(3px);
+  display: flex; align-items: flex-end; justify-content: center;
+}
+.sheet {
+  background: var(--cream); width: 100%; max-width: 560px;
+  border-radius: 22px 22px 0 0;
+  padding: 18px 20px calc(env(safe-area-inset-bottom) + 24px);
+  max-height: 72vh; overflow-y: auto;
+  box-shadow: 0 -8px 40px rgba(0, 0, 0, .25);
+  animation: sheet-up .3s cubic-bezier(.2, .8, .3, 1) both;
+}
+@keyframes sheet-up {
+  from { transform: translateY(40px); opacity: 0; }
+  to   { transform: none; opacity: 1; }
+}
+.sheet-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+.sheet-title { font-family: var(--font-display); font-size: 22px; font-weight: 900; color: var(--green-dark); }
+.sheet-close {
+  background: #fff; border: 1px solid var(--line); border-radius: 50%;
+  width: 32px; height: 32px; font-size: 14px; color: var(--muted);
+  cursor: pointer; font-family: inherit;
+}
+.sheet-close:active { background: var(--fairway); }
+
+.ver-row { padding: 14px 0; border-bottom: 1px solid var(--line); }
+.ver-row:last-child { border-bottom: none; }
+.ver-head { display: flex; align-items: baseline; gap: 10px; }
+.ver-num {
+  font-weight: 800; font-size: 13px; color: var(--green);
+  background: var(--fairway); padding: 2px 8px; border-radius: 8px;
+}
+.ver-title { font-weight: 700; font-size: 15px; }
+.ver-notes { margin: 8px 0 0 18px; display: flex; flex-direction: column; gap: 4px; }
+.ver-notes li { font-size: 13.5px; color: var(--muted); }
+
+/* ===== Splash / opening animation =====
+ * The gag: a shanked ball comes flying AT the screen and smacks it.
+ * The impact knocks the word "Shanked" onto the screen, then the "ed"
+ * falls off — leaving just "Shank".
+ */
+#splash {
+  position: fixed; inset: 0; z-index: 100;
+  background:
+    radial-gradient(700px 300px at 80% 0%, rgba(212, 167, 44, 0.14), transparent 70%),
+    radial-gradient(600px 300px at 10% 100%, rgba(39, 163, 91, 0.30), transparent 70%),
+    linear-gradient(160deg, var(--green), var(--green-dark));
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden;
+  transition: opacity .45s ease, visibility .45s;
+}
+#splash.splash-out { opacity: 0; visibility: hidden; pointer-events: none; }
+
+.splash-scene { position: absolute; inset: 0; }
+
+/* The fairway: striped green hill along the bottom. The tee sits on its
+ * crest; the ball's flight starts there and only ever climbs, so the
+ * two never touch. */
+.splash-fairway {
+  position: absolute; left: -12vw; right: -12vw; bottom: 0; height: 23vh;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, .10), transparent 22%),
+    /* right end of the hole: fairway → apron → putting green → apron → rough,
+     * crisp mow lines between each cut */
+    linear-gradient(90deg,
+      transparent     0 56%,
+      #239552       56% 60%,   /* apron */
+      #2da05e       60% 84%,   /* putting green */
+      #239552       84% 88%,   /* apron */
+      #11603a       88% 100%   /* rough */
+    ),
+    repeating-linear-gradient(94deg, #1d8a4f 0 10vw, #157440 10vw 20vw);
+  border-radius: 50% 50% 0 0 / 9vh;
+  box-shadow: 0 -6px 24px rgba(0, 0, 0, .25);
+}
+
+/* The hole & flag: off to the right where the ball was SUPPOSED to go.
+ * The pin flutters gently while the shot sails the other way. */
+.splash-hole {
+  position: absolute; left: 75vw; top: calc(85vh - 4px);
+  width: 26px; height: 8px; border-radius: 50%;
+  background: radial-gradient(ellipse at 50% 40%, #04230f, #0a3c1f 80%);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, .15);
+}
+.splash-flag {
+  position: absolute; left: calc(75vw + 11px); top: calc(85vh - 54px);
+  width: 3px; height: 54px; border-radius: 2px;
+  background: linear-gradient(180deg, #f4f6f7, #c2cbd1);
+  box-shadow: 1px 1px 2px rgba(0, 0, 0, .3);
+}
+.splash-flag::after {
+  content: ''; position: absolute; top: 2px; left: 3px;
+  width: 0; height: 0;
+  border-top: 8px solid transparent;
+  border-bottom: 8px solid transparent;
+  border-left: 22px solid #d6402e;
+  filter: drop-shadow(1px 1px 1px rgba(0, 0, 0, .25));
+  transform-origin: left center;
+  animation: flag-wave 2.2s ease-in-out infinite;
+}
+@keyframes flag-wave {
+  0%, 100% { transform: rotate(0deg) scaleX(1); }
+  50%      { transform: rotate(-4deg) scaleX(.92); }
+}
+
+/* The tee: a little white peg under the ball. It stays planted in the
+ * ground when the ball launches, like real life (on a good day). */
+.splash-tee {
+  position: absolute; left: calc(20vw - 2px); top: calc(87vh + 4px);
+  width: 4px; height: 11px;
+  background: linear-gradient(180deg, #fff, #d8dee2);
+  border-radius: 1px 1px 2px 2px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .3);
+}
+.splash-tee::before {
+  /* flared cup the ball rests on */
+  content: ''; position: absolute; top: -2px; left: -2px;
+  width: 8px; height: 3px; border-radius: 2px;
+  background: #fff;
+}
+
+/* Tee box markers: playing from the whites today */
+.splash-marker {
+  position: absolute; left: calc(20vw - 5px);
+  width: 9px; height: 9px; border-radius: 2px;
+  background: radial-gradient(circle at 35% 30%, #fff, #cfd6d0 80%);
+  box-shadow: 0 2px 3px rgba(0, 0, 0, .35);
+}
+.splash-marker.m-left  { top: calc(87vh - 46px); }
+.splash-marker.m-right { top: calc(87vh + 40px); }
+
+/* The club: a driver — black grip, steel shaft, titanium head.
+ * Winds up, holds a beat at the top, then rips through the ball with a
+ * full follow-through. Pivots from the grip end. */
+.splash-club {
+  position: absolute; left: calc(20vw - 8px); top: calc(87vh - 88px);
+  width: 5px; height: 88px; border-radius: 3px;
+  background: linear-gradient(180deg,
+    #1c1f22 0px, #33383c 20px,              /* rubber grip */
+    #f2f5f7 24px, #b7c1c8 60%, #8d979e);    /* steel shaft */
+  box-shadow: 1px 0 1px rgba(0, 0, 0, .25);
+  transform-origin: 50% 2px;
+  animation: club-swing 1.15s .15s both;
+}
+.splash-club::after {
+  /* driver head: rounded titanium back, face toward the ball */
+  content: ''; position: absolute; bottom: -7px; left: -23px;
+  width: 31px; height: 17px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, .35), transparent 40%),  /* crown highlight */
+    linear-gradient(145deg, #5a636a, #22272b 65%);
+  border-radius: 60% 12% 18% 50% / 75% 30% 45% 25%;
+  box-shadow:
+    inset -3px 0 2px rgba(255, 255, 255, .22),  /* striking face catches the light */
+    0 2px 5px rgba(0, 0, 0, .35);
+}
+@keyframes club-swing {
+  0%, 30% { transform: rotate(135deg); animation-timing-function: cubic-bezier(.55, 0, .9, .4); } /* wound up behind the ball */
+  58%     { transform: rotate(25deg); animation-timing-function: linear; }     /* ripping down */
+  64%     { transform: rotate(-5deg); animation-timing-function: ease-out; }   /* CONTACT */
+  100%    { transform: rotate(-80deg); }                                       /* follow-through toward the target */
+}
+
+/* The ball: sits on the tee, then launches at the viewer off the club face.
+ * Three nested layers so each axis eases independently — distance is
+ * steady, height arcs up and settles, growth accelerates as it nears.
+ * That separation is what makes the flight read smooth instead of robotic. */
+.splash-flight {
+  position: absolute; left: 20vw; top: 87vh;
+  animation: fly-x .85s linear .9s both;
+}
+.splash-rise {
+  display: block;
+  animation: fly-y .85s cubic-bezier(.2, .75, .45, 1) .9s both;
+}
+.splash-ball {
+  display: block;
+  width: 18px; height: 18px; margin: -9px 0 0 -9px; border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fff, #cfd6d0 75%);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .35);
+  animation:
+    fly-grow .85s cubic-bezier(.6, .05, .85, .45) .9s both,
+    ball-into .35s cubic-bezier(.6, 0, .9, .5) 1.72s forwards;
+}
+@keyframes fly-x    { from { transform: translateX(0); }       to { transform: translateX(30vw); } }
+@keyframes fly-y    { from { transform: translateY(0); }       to { transform: translateY(-41vh); } }
+@keyframes fly-grow { from { transform: scale(.55); }          to { transform: scale(4.2); } }
+/* ...and right through the screen — it grows until it IS the screen */
+@keyframes ball-into {
+  from { transform: scale(4.2); }
+  to   { transform: scale(160); }
+}
+
+/* The whiteout: the ball fills everything, so the world goes white */
+.splash-white {
+  position: absolute; inset: 0;
+  background: #fff;
+  opacity: 0;
+  animation: white-in .3s ease-in 1.8s forwards;
+}
+@keyframes white-in { to { opacity: 1; } }
+
+/* "Shanked" appears out of the whiteout... */
+.splash-center { position: relative; text-align: center; padding: 0 24px; }
+.splash-word {
+  font-family: var(--font-display);
+  font-size: clamp(48px, 15vw, 92px);
+  font-weight: 900; color: var(--green); letter-spacing: -1px;
+  text-shadow: 0 2px 16px rgba(10, 92, 51, .15);
+  animation: word-slam .5s cubic-bezier(.2, .9, .3, 1.25) 2.05s both;
+}
+@keyframes word-slam {
+  0%   { opacity: 0; transform: scale(2.6) rotate(-7deg); }
+  60%  { opacity: 1; transform: scale(.94) rotate(2deg); }
+  100% { opacity: 1; transform: scale(1) rotate(0deg); }
+}
+/* ...then the "ed" loses its grip and falls off */
+.splash-ed {
+  display: inline-block;
+  color: inherit;
+  transform-origin: top left;
+  animation: ed-drop .8s cubic-bezier(.5, 0, .8, .4) 3.05s forwards;
+}
+@keyframes ed-drop {
+  0%   { transform: none; opacity: 1; }
+  20%  { transform: rotate(14deg) translateY(2px); }            /* loses grip */
+  100% { transform: rotate(110deg) translateY(70vh); opacity: 0; }
+}
+/* Accessibility: no flying balls for reduced-motion folks */
+@media (prefers-reduced-motion: reduce) {
+  .splash-ball, .splash-club, .splash-flight, .splash-rise { animation: none; opacity: 0; }
+  .splash-flag::after { animation: none; }
+  .splash-white { animation: none; opacity: 1; }
+  .splash-ed { animation: none; opacity: 0; }
+  .splash-word { animation: simple-fade .5s ease both; }
+  @keyframes simple-fade { from { opacity: 0; } to { opacity: 1; } }
+}

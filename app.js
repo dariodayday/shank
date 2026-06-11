@@ -62,6 +62,11 @@ const Store = {
     this.cache.rounds.push(round);
     return round;
   },
+  async removeRound(id) {
+    const { error } = await sb.from('rounds').delete().eq('id', id);
+    if (error) throw error;
+    this.cache.rounds = this.cache.rounds.filter(r => r.id !== id);
+  },
   roundsFor(playerId) {
     return this.rounds()
       .filter(r => r.playerId === playerId)
@@ -97,6 +102,80 @@ function playerSummary(p) {
   };
 }
 
+/* ---------- Season records (the trash-talk fuel) ---------- */
+function avg(arr) { return arr.reduce((s, x) => s + x, 0) / arr.length; }
+function stddev(arr) {
+  const m = avg(arr);
+  return Math.sqrt(avg(arr.map(x => (x - m) ** 2)));
+}
+function fmtToPar(n) { return n > 0 ? `+${n}` : n === 0 ? 'E' : `${n}`; }
+
+function computeRecords() {
+  const players = Store.players();
+  const recs = [];
+
+  // Every round flattened, with who shot it (to-par).
+  const all = [];
+  players.forEach(p => Store.roundsFor(p.id).forEach(r =>
+    all.push({ name: p.name, toPar: r.score - (r.par || 72), score: r.score })));
+
+  if (all.length) {
+    const low = all.reduce((a, b) => (b.toPar < a.toPar ? b : a));
+    recs.push({ icon: '🔥', label: 'Lowest Round', who: low.name, value: `${low.score} (${fmtToPar(low.toPar)})` });
+    const high = all.reduce((a, b) => (b.toPar > a.toPar ? b : a));
+    recs.push({ icon: '💣', label: 'Biggest Blowup', who: high.name, value: `${high.score} (${fmtToPar(high.toPar)})` });
+  }
+
+  // Most rounds played (only brag-worthy at 2+).
+  const counts = players.map(p => ({ name: p.name, n: Store.roundsFor(p.id).length })).filter(x => x.n > 0);
+  if (counts.length) {
+    const most = counts.reduce((a, b) => (b.n > a.n ? b : a));
+    if (most.n >= 2) recs.push({ icon: '🏌️', label: 'Most Rounds', who: most.name, value: `${most.n} rounds` });
+  }
+
+  // Most improved: first-half avg vs second-half avg (needs 4+ rounds).
+  let bestImp = null;
+  players.forEach(p => {
+    const tp = Store.roundsFor(p.id).slice().reverse().map(r => r.score - (r.par || 72)); // oldest first
+    if (tp.length >= 4) {
+      const half = Math.floor(tp.length / 2);
+      const imp = avg(tp.slice(0, half)) - avg(tp.slice(tp.length - half));
+      if (imp > 0 && (!bestImp || imp > bestImp.imp)) bestImp = { name: p.name, imp };
+    }
+  });
+  if (bestImp) recs.push({ icon: '📈', label: 'Most Improved', who: bestImp.name, value: `${bestImp.imp.toFixed(1)} strokes better` });
+
+  // Most consistent: lowest spread in scores (needs 3+ rounds).
+  let bestCons = null;
+  players.forEach(p => {
+    const tp = Store.roundsFor(p.id).map(r => r.score - (r.par || 72));
+    if (tp.length >= 3) {
+      const sd = stddev(tp);
+      if (!bestCons || sd < bestCons.sd) bestCons = { name: p.name, sd };
+    }
+  });
+  if (bestCons) recs.push({ icon: '🎯', label: 'Most Consistent', who: bestCons.name, value: `±${bestCons.sd.toFixed(1)} strokes` });
+
+  return recs;
+}
+
+function renderRecords() {
+  const section = document.getElementById('records-section');
+  const list = document.getElementById('records-list');
+  const recs = computeRecords();
+  if (!recs.length) { section.classList.add('hidden'); return; }
+  section.classList.remove('hidden');
+  list.innerHTML = recs.map(r => `
+    <div class="record">
+      <div class="record-ico">${r.icon}</div>
+      <div class="record-body">
+        <div class="record-label">${r.label}</div>
+        <div class="record-who">${esc(r.who)}</div>
+        <div class="record-val">${esc(r.value)}</div>
+      </div>
+    </div>`).join('');
+}
+
 /* ---------- Navigation ---------- */
 const views = ['leaderboard', 'add', 'players', 'detail'];
 function show(view, ctx) {
@@ -114,7 +193,57 @@ document.querySelectorAll('[data-nav]').forEach(el => {
   el.addEventListener('click', () => show(el.dataset.nav));
 });
 
+// Tapping the Shank logo reloads the app, which replays the splash.
+document.querySelector('.brand').addEventListener('click', () => location.reload());
+
+/* ---------- Version history ---------- */
+const CHANGELOG = [
+  { v: '0.4.0', title: 'The glow-up', notes: [
+    'Whole new look: fancy fonts, medal rank badges, frosted tab bar',
+    'Opening animation — tee shot straight into your face',
+    'Tap the logo to replay it',
+    'Version history (you\'re looking at it)',
+  ]},
+  { v: '0.3.0', title: 'Trash-talk fuel', notes: [
+    'Season records: lowest round, biggest blowup, most improved & more',
+    'Recent form chips on player pages',
+    'Delete a single round',
+  ]},
+  { v: '0.2.0', title: 'The crew goes cloud', notes: [
+    'Scores sync through the cloud — one shared leaderboard for everyone',
+    'Live on the web for the whole crew',
+  ]},
+  { v: '0.1.0', title: 'First swing', notes: [
+    'Log rounds, auto handicaps, season leaderboard',
+    'Data lived on your phone only',
+  ]},
+];
+
+const changelogOverlay = document.getElementById('changelog-overlay');
+document.getElementById('version-btn').addEventListener('click', () => {
+  document.getElementById('changelog-list').innerHTML = CHANGELOG.map(c => `
+    <div class="ver-row">
+      <div class="ver-head"><span class="ver-num">v${c.v}</span><span class="ver-title">${esc(c.title)}</span></div>
+      <ul class="ver-notes">${c.notes.map(n => `<li>${esc(n)}</li>`).join('')}</ul>
+    </div>`).join('');
+  changelogOverlay.classList.remove('hidden');
+});
+document.getElementById('changelog-close').addEventListener('click', () =>
+  changelogOverlay.classList.add('hidden'));
+changelogOverlay.addEventListener('click', e => {
+  if (e.target === changelogOverlay) changelogOverlay.classList.add('hidden');
+});
+
 /* ---------- Renderers ---------- */
+// Example board shown before any real rounds exist, so the Board tab
+// demos what the crew is playing for instead of sitting empty.
+const DEMO_BOARD = [
+  { name: 'Scottie Scheffler', rounds: 9, hcp: '+8.4', avg: 68, best: 62 },
+  { name: 'Rory McIlroy',      rounds: 8, hcp: '+7.9', avg: 69, best: 63 },
+  { name: 'Tiger Woods',       rounds: 6, hcp: '+7.1', avg: 70, best: 61 },
+  { name: 'Bryson DeChambeau', rounds: 7, hcp: '+6.8', avg: 70, best: 58 },
+];
+
 function renderLeaderboard() {
   const list = document.getElementById('leaderboard-list');
   const empty = document.getElementById('leaderboard-empty');
@@ -124,8 +253,25 @@ function renderLeaderboard() {
     .sort((a, b) => a.hcp - b.hcp); // lowest handicap wins
 
   if (!summaries.length) {
-    list.innerHTML = '';
-    empty.classList.remove('hidden');
+    empty.classList.add('hidden');
+    list.innerHTML = `
+      <div class="demo-banner">
+        <p><strong>No rounds yet</strong> — here's a sneak peek of your board.</p>
+        <button class="btn btn-primary btn-small" id="demo-cta">Add your crew</button>
+      </div>` + DEMO_BOARD.map((s, i) => `
+      <div class="card demo">
+        <div class="rank rank-${i + 1}">${i === 0 ? '🥇' : i + 1}</div>
+        <div class="lb-main">
+          <div class="lb-name">${esc(s.name)}<span class="demo-chip">example</span></div>
+          <div class="lb-meta">${s.rounds} rounds · avg ${s.avg} · best ${s.best}</div>
+        </div>
+        <div class="lb-hcp">
+          <div class="num">${s.hcp}</div>
+          <div class="lbl">hcp</div>
+        </div>
+      </div>`).join('');
+    document.getElementById('demo-cta').addEventListener('click', () => show('players'));
+    renderRecords();
     return;
   }
   empty.classList.add('hidden');
@@ -142,6 +288,7 @@ function renderLeaderboard() {
       </div>
     </div>`).join('');
   bindPlayerTaps(list);
+  renderRecords();
 }
 
 function renderPlayers() {
@@ -176,6 +323,23 @@ function renderDetail(id) {
     <div class="stat"><div class="num">${s.best ?? '—'}</div><div class="lbl">Best round</div></div>`;
 
   const rounds = Store.roundsFor(p.id);
+
+  // Recent form: up to last 5 rounds, oldest→newest so the trend reads left to right.
+  const formEl = document.getElementById('detail-form');
+  if (rounds.length) {
+    const recent = rounds.slice(0, 5).reverse();
+    formEl.innerHTML = `<div class="form-strip">
+      <span class="form-label">Recent form</span>
+      <div class="form-chips">${recent.map(r => {
+        const tp = r.score - (r.par || 72);
+        const cls = tp > 0 ? 'pos' : tp < 0 ? 'neg' : '';
+        return `<span class="form-chip ${cls}">${fmtToPar(tp)}</span>`;
+      }).join('')}</div>
+    </div>`;
+  } else {
+    formEl.innerHTML = '';
+  }
+
   const box = document.getElementById('detail-rounds');
   if (!rounds.length) {
     box.innerHTML = '<p class="muted">No rounds logged yet.</p>';
@@ -190,8 +354,17 @@ function renderDetail(id) {
           <div class="round-score">${r.score} <span class="over-par ${cls}">${over}</span></div>
           <div class="round-info">${esc(r.course || 'Unknown course')} · ${fmtDate(r.date)}</div>
         </div>
+        <button class="round-del" data-round="${r.id}" title="Delete round">✕</button>
       </div>`;
     }).join('');
+    box.querySelectorAll('.round-del').forEach(b => {
+      b.addEventListener('click', async () => {
+        if (confirm('Delete this round? This can\'t be undone.')) {
+          try { await Store.removeRound(b.dataset.round); renderDetail(p.id); }
+          catch (err) { alert('Could not delete: ' + err.message); }
+        }
+      });
+    });
   }
   document.getElementById('detail-delete').onclick = async () => {
     if (confirm(`Remove ${p.name} and all their rounds? This can't be undone.`)) {
@@ -288,8 +461,23 @@ function todayStr() {
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
 }
 
+/* ---------- Splash ---------- */
+// The splash doubles as the loading screen: it stays up until the data has
+// arrived AND the animation has had time to land (min 4s), then fades out.
+const SPLASH_MIN_MS = 4000;
+function dismissSplash(startedAt) {
+  const splash = document.getElementById('splash');
+  if (!splash) return;
+  const wait = Math.max(0, SPLASH_MIN_MS - (Date.now() - startedAt));
+  setTimeout(() => {
+    splash.classList.add('splash-out');
+    setTimeout(() => splash.remove(), 500);
+  }, wait);
+}
+
 /* ---------- Boot ---------- */
 async function boot() {
+  const splashStart = Date.now();
   const list = document.getElementById('leaderboard-list');
   const sub = document.getElementById('leaderboard-sub');
   sub.textContent = 'Loading the crew from the cloud…';
@@ -304,6 +492,8 @@ async function boot() {
       <p>Couldn't reach the cloud.</p>
       <p class="muted">${esc(err.message || 'Check your connection and refresh.')}</p>
     </div>`;
+  } finally {
+    dismissSplash(splashStart);
   }
 }
 boot();
