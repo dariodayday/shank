@@ -278,6 +278,9 @@ document.querySelector('.brand').addEventListener('click', () => location.reload
 
 /* ---------- Version history ---------- */
 const CHANGELOG = [
+  { v: '0.5.1', title: 'No mystery rounds', notes: [
+    'Course is now required when logging a round',
+  ]},
   { v: '0.5.0', title: 'Get your own account', notes: [
     'Sign up with email + password — your name, your scores',
     'Only you can log or delete your own rounds',
@@ -498,6 +501,7 @@ document.getElementById('round-form').addEventListener('submit', async e => {
 
   if (!playerId) { return flash(msg, 'Add a player first (Players tab).', 'err'); }
   if (!score || score < 18) { return flash(msg, 'Enter a real score.', 'err'); }
+  if (!course) { return flash(msg, 'Where did you play? Course is required.', 'err'); }
 
   btn.disabled = true;
   flash(msg, 'Saving…', 'ok');
