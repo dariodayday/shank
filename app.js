@@ -278,6 +278,10 @@ document.querySelector('.brand').addEventListener('click', () => location.reload
 
 /* ---------- Version history ---------- */
 const CHANGELOG = [
+  { v: '0.6.0', title: 'Home turf', notes: [
+    '38 courses around Vaughan & the GTA built in — type a couple letters and pick',
+    'Par fills in automatically for every built-in course',
+  ]},
   { v: '0.5.2', title: 'Course memory', notes: [
     'Typing a course suggests ones the crew has played',
     'Picking a known course fills in its par automatically',
@@ -481,6 +485,56 @@ function bindPlayerTaps(container) {
 }
 
 /* ---------- Add Round form ---------- */
+// Built-in courses around Vaughan & the GTA north so suggestions work from
+// day one and everyone spells them the same way. Pars are best-known; if a
+// round gets logged with a corrected par, the logged par wins from then on.
+const BUILTIN_COURSES = [
+  // Vaughan / Woodbridge / Kleinburg / Maple / Thornhill
+  { name: 'Eagles Nest Golf Club', par: 72 },
+  { name: 'Copper Creek Golf Club', par: 72 },
+  { name: 'Kleinburg Golf Club', par: 72 },
+  { name: 'Kirby Links (par 3)', par: 54 },
+  { name: 'The National Golf Club of Canada', par: 72 },
+  { name: 'The Country Club (Woodbridge)', par: 72 },
+  { name: 'Uplands Golf & Ski (9 holes)', par: 35 },
+  { name: 'Thornhill Club', par: 71 },
+  { name: 'Maple Downs Golf & Country Club', par: 72 },
+  // Richmond Hill
+  { name: 'Richmond Hill Golf Club', par: 70 },
+  { name: 'Bathurst Glen Golf Club', par: 70 },
+  { name: 'Bloomington Downs Golf Club', par: 72 },
+  { name: 'DiamondBack Golf Club', par: 72 },
+  // Markham / Gormley / Stouffville
+  { name: 'Angus Glen North', par: 72 },
+  { name: 'Angus Glen South', par: 72 },
+  { name: 'Remington Parkview Golf & Country Club', par: 72 },
+  { name: 'Station Creek Golf Club', par: 72 },
+  { name: 'Emerald Hills Golf Club', par: 72 },
+  { name: 'Spring Lakes Golf Club', par: 72 },
+  { name: 'Ballantrae Golf Club', par: 72 },
+  { name: 'Sleepy Hollow Country Club', par: 72 },
+  // Aurora / Newmarket / King / Nobleton
+  { name: "St. Andrew's Valley Golf Club", par: 72 },
+  { name: 'Westview Golf Club', par: 72 },
+  { name: 'Cardinal Golf Club', par: 72 },
+  { name: 'Cardinal RedCrest', par: 72 },
+  { name: 'Nobleton Lakes Golf Club', par: 72 },
+  { name: 'Carrying Place Golf & Country Club', par: 72 },
+  { name: 'Silver Lakes Golf & Country Club', par: 72 },
+  { name: 'Pheasant Run Golf Club', par: 72 },
+  // Bolton / Caledon / Brampton
+  { name: 'Glen Eagle Golf Club', par: 72 },
+  { name: 'Caledon Woods Golf Club', par: 72 },
+  { name: 'Lionhead Legends', par: 72 },
+  { name: 'Lionhead Masters', par: 72 },
+  { name: 'Turnberry Golf Club', par: 70 },
+  // Toronto city courses (cheap & public)
+  { name: 'Don Valley Golf Course', par: 71 },
+  { name: 'Humber Valley Golf Course', par: 70 },
+  { name: 'Scarlett Woods (executive)', par: 62 },
+  { name: 'Royal Woodbine Golf Club', par: 71 },
+];
+
 // Courses the crew has played, with the par used last time: typing a known
 // course suggests it, and picking it auto-fills the par.
 let coursePars = {};
@@ -497,6 +551,7 @@ function prepAddForm() {
   if (!dateInput.value) dateInput.value = todayStr();
 
   coursePars = {};
+  BUILTIN_COURSES.forEach(c => { coursePars[c.name.toLowerCase()] = { name: c.name, par: c.par }; });
   Store.rounds()
     .slice()
     .sort((a, b) => (a.date < b.date ? -1 : 1)) // oldest first, newest par wins
@@ -505,7 +560,9 @@ function prepAddForm() {
       if (name) coursePars[name.toLowerCase()] = { name, par: r.par || 72 };
     });
   document.getElementById('course-list').innerHTML =
-    Object.values(coursePars).map(c => `<option value="${esc(c.name)}"></option>`).join('');
+    Object.values(coursePars)
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .map(c => `<option value="${esc(c.name)}"></option>`).join('');
 }
 
 document.getElementById('round-course').addEventListener('input', e => {
