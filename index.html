@@ -70,10 +70,10 @@
           <span>Player</span>
           <select id="round-player" required></select>
         </label>
-        <label class="field">
+        <label class="field field-suggest">
           <span>Course</span>
-          <input id="round-course" type="text" placeholder="e.g. Pine Valley muni" maxlength="40" list="course-list" autocomplete="off" required />
-          <datalist id="course-list"></datalist>
+          <input id="round-course" type="text" placeholder="Start typing a course…" maxlength="40" autocomplete="off" required />
+          <div id="course-suggest" class="suggest hidden"></div>
         </label>
         <div class="field-row">
           <label class="field">
@@ -156,7 +156,7 @@
     </button>
   </nav>
 
-  <footer class="footer"><button id="version-btn">Shank v0.6.0</button> · shared with your crew</footer>
+  <footer class="footer"><button id="version-btn">Shank v0.6.1</button> · shared with your crew</footer>
 
   <!-- Version history sheet -->
   <div id="changelog-overlay" class="overlay hidden">

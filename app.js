@@ -278,6 +278,9 @@ document.querySelector('.brand').addEventListener('click', () => location.reload
 
 /* ---------- Version history ---------- */
 const CHANGELOG = [
+  { v: '0.6.1', title: 'Suggestions you can read', notes: [
+    'Course suggestions now show in a proper dropdown — green on white, with the par',
+  ]},
   { v: '0.6.0', title: 'Home turf', notes: [
     '38 courses around Vaughan & the GTA built in — type a couple letters and pick',
     'Par fills in automatically for every built-in course',
@@ -559,15 +562,41 @@ function prepAddForm() {
       const name = (r.course || '').trim();
       if (name) coursePars[name.toLowerCase()] = { name, par: r.par || 72 };
     });
-  document.getElementById('course-list').innerHTML =
-    Object.values(coursePars)
-      .sort((a, b) => a.name.localeCompare(b.name))
-      .map(c => `<option value="${esc(c.name)}"></option>`).join('');
 }
 
-document.getElementById('round-course').addEventListener('input', e => {
-  const hit = coursePars[e.target.value.trim().toLowerCase()];
+// Custom suggestion dropdown (the browser's native one is unstylable and
+// nearly invisible in some browsers).
+const courseInput = document.getElementById('round-course');
+const suggestBox = document.getElementById('course-suggest');
+
+function renderCourseSuggest() {
+  const q = courseInput.value.trim().toLowerCase();
+  const exact = coursePars[q];
+  if (exact) document.getElementById('round-par').value = exact.par;
+  const matches = q
+    ? Object.values(coursePars)
+        .filter(c => c.name.toLowerCase().includes(q) && c.name.toLowerCase() !== q)
+        .sort((a, b) => a.name.localeCompare(b.name))
+        .slice(0, 6)
+    : [];
+  suggestBox.classList.toggle('hidden', !matches.length);
+  suggestBox.innerHTML = matches.map(c =>
+    `<div class="suggest-item" data-course="${esc(c.name)}">
+      <span>${esc(c.name)}</span><span class="sg-par">par ${c.par}</span>
+    </div>`).join('');
+}
+courseInput.addEventListener('input', renderCourseSuggest);
+courseInput.addEventListener('focus', renderCourseSuggest);
+courseInput.addEventListener('blur', () => setTimeout(() => suggestBox.classList.add('hidden'), 150));
+suggestBox.addEventListener('mousedown', e => {
+  // mousedown beats blur, so the tap lands before the box hides
+  const item = e.target.closest('.suggest-item');
+  if (!item) return;
+  e.preventDefault();
+  courseInput.value = item.dataset.course;
+  const hit = coursePars[item.dataset.course.toLowerCase()];
   if (hit) document.getElementById('round-par').value = hit.par;
+  suggestBox.classList.add('hidden');
 });
 
 document.getElementById('round-form').addEventListener('submit', async e => {

@@ -242,6 +242,21 @@ input:focus, select:focus { outline: none; border-color: var(--green-light); box
 .round-del:hover { color: var(--danger); background: #fbeae7; }
 .round-del:active { background: #f6d9d4; color: var(--danger); }
 
+/* ===== Course suggestion dropdown ===== */
+.field-suggest { position: relative; }
+.suggest {
+  position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 30;
+  background: #fff; border: 1.5px solid var(--line); border-radius: 12px;
+  box-shadow: var(--shadow-lift); max-height: 230px; overflow-y: auto;
+}
+.suggest-item {
+  padding: 12px 14px; font-size: 15px; font-weight: 600; color: var(--green);
+  cursor: pointer; display: flex; justify-content: space-between; align-items: baseline; gap: 8px;
+}
+.suggest-item + .suggest-item { border-top: 1px solid var(--line); }
+.suggest-item:hover, .suggest-item:active { background: var(--fairway); }
+.suggest-item .sg-par { color: var(--muted); font-weight: 500; font-size: 12.5px; white-space: nowrap; }
+
 /* ===== Demo board (before any real rounds) ===== */
 .demo-banner {
   background: var(--fairway); border: 1px solid #d3e6d8; border-radius: var(--radius);
