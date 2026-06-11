@@ -131,10 +131,65 @@
       </form>
     </section>
 
+    <!-- ===== PROFILE VIEW (your own) ===== -->
+    <section id="view-profile" class="view hidden">
+      <h1 class="view-title">Your Profile</h1>
+      <p class="view-sub">How you show up to the crew.</p>
+      <form id="profile-form" class="form">
+        <div class="photo-row">
+          <div id="profile-avatar-preview"></div>
+          <div>
+            <label class="btn btn-small btn-secondary" for="profile-photo">Choose photo</label>
+            <input id="profile-photo" type="file" accept="image/*" class="hidden" />
+            <p class="muted photo-hint">It gets cropped to a square.</p>
+          </div>
+        </div>
+        <label class="field">
+          <span>Motto / walk-up line</span>
+          <input id="profile-motto" type="text" maxlength="60" placeholder='e.g. "fore, on the left"' />
+        </label>
+        <label class="field">
+          <span>Bio</span>
+          <textarea id="profile-bio" maxlength="200" rows="3" placeholder="Tell the crew who they're dealing with…"></textarea>
+        </label>
+        <label class="field">
+          <span>Favorite club</span>
+          <select id="profile-club">
+            <option value="">Pick a club…</option>
+            <option>Driver</option>
+            <option>3 Wood</option>
+            <option>5 Wood</option>
+            <option>Hybrid</option>
+            <option>3 Iron</option>
+            <option>4 Iron</option>
+            <option>5 Iron</option>
+            <option>6 Iron</option>
+            <option>7 Iron</option>
+            <option>8 Iron</option>
+            <option>9 Iron</option>
+            <option>Pitching Wedge</option>
+            <option>Gap Wedge</option>
+            <option>Sand Wedge</option>
+            <option>Lob Wedge</option>
+            <option>Putter</option>
+          </select>
+        </label>
+        <label class="field field-suggest">
+          <span>Home course</span>
+          <input id="profile-home" type="text" maxlength="40" autocomplete="off" placeholder="Start typing a course…" />
+          <div id="home-suggest" class="suggest hidden"></div>
+        </label>
+        <button type="submit" class="btn btn-primary">Save profile</button>
+        <p id="profile-msg" class="form-msg"></p>
+      </form>
+      <button class="btn btn-danger btn-block" id="signout-btn">Sign out</button>
+    </section>
+
     <!-- ===== PLAYER DETAIL VIEW ===== -->
     <section id="view-detail" class="view hidden">
       <button class="back-btn" data-nav="players">← Players</button>
       <h1 class="view-title" id="detail-name">Player</h1>
+      <div id="detail-about"></div>
       <div class="stat-grid" id="detail-stats"></div>
       <div id="detail-form"></div>
       <h2 class="section-h">Round history</h2>
@@ -156,7 +211,7 @@
     </button>
   </nav>
 
-  <footer class="footer"><button id="version-btn">Shank v0.6.1</button> · shared with your crew</footer>
+  <footer class="footer"><button id="version-btn">Shank v0.7.0</button> · shared with your crew</footer>
 
   <!-- Version history sheet -->
   <div id="changelog-overlay" class="overlay hidden">

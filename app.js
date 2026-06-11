@@ -33,7 +33,11 @@ const Store = {
     ]);
     if (pRes.error) throw pRes.error;
     if (rRes.error) throw rRes.error;
-    this.cache.players = (pRes.data || []).map(p => ({ id: p.id, name: p.name, userId: p.user_id }));
+    this.cache.players = (pRes.data || []).map(p => ({
+      id: p.id, name: p.name, userId: p.user_id,
+      bio: p.bio, favClub: p.fav_club, homeCourse: p.home_course,
+      motto: p.motto, avatarUrl: p.avatar_url,
+    }));
     this.cache.rounds = (rRes.data || []).map(r => ({
       id: r.id, playerId: r.player_id, score: r.score,
       par: r.par, course: r.course, date: r.date,
@@ -49,6 +53,34 @@ const Store = {
     if (error) throw error;
     this.cache.players.push(p);
     return p;
+  },
+  async updateProfile(id, f) {
+    const { error } = await sb.from('players').update({
+      bio: f.bio || null, fav_club: f.favClub || null,
+      home_course: f.homeCourse || null, motto: f.motto || null,
+      avatar_url: f.avatarUrl || null,
+    }).eq('id', id);
+    if (error) throw error;
+    Object.assign(this.cache.players.find(p => p.id === id), f);
+  },
+  // Shrinks any photo to a 256px square JPEG so uploads are tiny and fast.
+  async uploadAvatar(file) {
+    const img = await new Promise((res, rej) => {
+      const i = new Image();
+      i.onload = () => res(i); i.onerror = rej;
+      i.src = URL.createObjectURL(file);
+    });
+    const size = 256;
+    const canvas = document.createElement('canvas');
+    canvas.width = size; canvas.height = size;
+    const s = Math.min(img.width, img.height); // center square crop
+    canvas.getContext('2d').drawImage(img, (img.width - s) / 2, (img.height - s) / 2, s, s, 0, 0, size, size);
+    const blob = await new Promise(r => canvas.toBlob(r, 'image/jpeg', 0.85));
+    const path = `${session.user.id}.jpg`;
+    const { error } = await sb.storage.from('avatars').upload(path, blob, { upsert: true, contentType: 'image/jpeg' });
+    if (error) throw error;
+    // timestamp busts caches so a new photo shows up right away
+    return sb.storage.from('avatars').getPublicUrl(path).data.publicUrl + '?t=' + Date.now();
   },
   async removePlayer(id) {
     // Rounds first so nothing orphans if the player delete fails.
@@ -102,6 +134,8 @@ function playerSummary(p) {
   return {
     id: p.id,
     name: p.name,
+    avatarUrl: p.avatarUrl,
+    motto: p.motto,
     rounds: rounds.length,
     hcp: handicap(p.id),
     avg: scores.length ? Math.round(scores.reduce((s, x) => s + x, 0) / scores.length) : null,
@@ -198,8 +232,11 @@ function updateAuthUI() {
   }
 }
 
-document.getElementById('auth-btn').addEventListener('click', async () => {
-  if (!session) return show('auth');
+document.getElementById('auth-btn').addEventListener('click', () => {
+  show(session ? 'profile' : 'auth');
+});
+
+document.getElementById('signout-btn').addEventListener('click', async () => {
   if (confirm('Sign out of Shank?')) {
     await sb.auth.signOut();
     location.reload();
@@ -257,7 +294,7 @@ document.getElementById('auth-form').addEventListener('submit', async e => {
 document.getElementById('add-gate-btn').addEventListener('click', () => show('auth'));
 
 /* ---------- Navigation ---------- */
-const views = ['leaderboard', 'add', 'players', 'detail', 'auth'];
+const views = ['leaderboard', 'add', 'players', 'detail', 'auth', 'profile'];
 function show(view, ctx) {
   views.forEach(v => document.getElementById('view-' + v).classList.toggle('hidden', v !== view));
   document.querySelectorAll('.tab').forEach(t => {
@@ -267,6 +304,7 @@ function show(view, ctx) {
   if (view === 'add') prepAddForm();
   if (view === 'players') renderPlayers();
   if (view === 'detail') renderDetail(ctx);
+  if (view === 'profile') renderProfile();
 }
 
 document.querySelectorAll('[data-nav]').forEach(el => {
@@ -278,6 +316,12 @@ document.querySelector('.brand').addEventListener('click', () => location.reload
 
 /* ---------- Version history ---------- */
 const CHANGELOG = [
+  { v: '0.7.0', title: 'Faces on the board', notes: [
+    'Player profiles: photo, bio, motto, favorite club, home course',
+    'Tap your name (top right) to edit yours',
+    'Photos and mottos show on the leaderboard',
+    'Pick your club from the bag, browse the full course list with one tap',
+  ]},
   { v: '0.6.1', title: 'Suggestions you can read', notes: [
     'Course suggestions now show in a proper dropdown — green on white, with the par',
   ]},
@@ -360,6 +404,7 @@ function renderLeaderboard() {
       </div>` + DEMO_BOARD.map((s, i) => `
       <div class="card demo">
         <div class="rank rank-${i + 1}">${i === 0 ? '🥇' : i + 1}</div>
+        <div class="avatar avatar-fb">${esc(s.name[0])}</div>
         <div class="lb-main">
           <div class="lb-name">${esc(s.name)}<span class="demo-chip">example</span></div>
           <div class="lb-meta">${s.rounds} rounds · avg ${s.avg} · best ${s.best}</div>
@@ -377,8 +422,10 @@ function renderLeaderboard() {
   list.innerHTML = summaries.map((s, i) => `
     <div class="card tappable" data-player="${s.id}">
       <div class="rank rank-${i + 1}">${i === 0 ? '🥇' : i + 1}</div>
+      ${avatarHtml(s)}
       <div class="lb-main">
         <div class="lb-name">${esc(s.name)}</div>
+        ${s.motto ? `<div class="lb-motto">“${esc(s.motto)}”</div>` : ''}
         <div class="lb-meta">${s.rounds} round${s.rounds === 1 ? '' : 's'} · avg ${s.avg} · best ${s.best}</div>
       </div>
       <div class="lb-hcp">
@@ -402,8 +449,10 @@ function renderPlayers() {
     const s = playerSummary(p);
     return `
     <div class="card tappable" data-player="${p.id}">
+      ${avatarHtml(p)}
       <div class="lb-main">
         <div class="lb-name">${esc(p.name)}</div>
+        ${p.motto ? `<div class="lb-motto">“${esc(p.motto)}”</div>` : ''}
         <div class="lb-meta">${s.rounds ? `hcp ${s.hcp} · ${s.rounds} round${s.rounds === 1 ? '' : 's'}` : 'no rounds yet'}</div>
       </div>
       <div class="chev">›</div>
@@ -419,6 +468,20 @@ function renderDetail(id) {
   const mine = !!(session && p.userId === session.user.id);
   const s = playerSummary(p);
   document.getElementById('detail-name').textContent = p.name + (mine ? ' (you)' : '');
+
+  const chips = [];
+  if (p.favClub) chips.push(`<span class="about-chip">🏌️ ${esc(p.favClub)}</span>`);
+  if (p.homeCourse) chips.push(`<span class="about-chip">📍 ${esc(p.homeCourse)}</span>`);
+  document.getElementById('detail-about').innerHTML = `
+    <div class="detail-head">
+      ${avatarHtml(p, 'avatar-lg')}
+      <div class="detail-head-text">
+        ${p.motto ? `<div class="lb-motto">“${esc(p.motto)}”</div>` : ''}
+        ${p.bio ? `<p class="about-bio">${esc(p.bio)}</p>` : ''}
+      </div>
+    </div>
+    ${chips.length ? `<div class="about-chips">${chips.join('')}</div>` : ''}
+    ${mine ? `<button type="button" class="btn btn-small btn-secondary edit-profile" onclick="show('profile')">Edit profile</button>` : ''}`;
   document.getElementById('detail-stats').innerHTML = `
     <div class="stat"><div class="num">${s.hcp ?? '—'}</div><div class="lbl">Handicap</div></div>
     <div class="stat"><div class="num">${s.rounds}</div><div class="lbl">Rounds played</div></div>
@@ -565,38 +628,94 @@ function prepAddForm() {
 }
 
 // Custom suggestion dropdown (the browser's native one is unstylable and
-// nearly invisible in some browsers).
-const courseInput = document.getElementById('round-course');
-const suggestBox = document.getElementById('course-suggest');
-
-function renderCourseSuggest() {
-  const q = courseInput.value.trim().toLowerCase();
-  const exact = coursePars[q];
-  if (exact) document.getElementById('round-par').value = exact.par;
-  const matches = q
-    ? Object.values(coursePars)
-        .filter(c => c.name.toLowerCase().includes(q) && c.name.toLowerCase() !== q)
-        .sort((a, b) => a.name.localeCompare(b.name))
-        .slice(0, 6)
-    : [];
-  suggestBox.classList.toggle('hidden', !matches.length);
-  suggestBox.innerHTML = matches.map(c =>
-    `<div class="suggest-item" data-course="${esc(c.name)}">
-      <span>${esc(c.name)}</span><span class="sg-par">par ${c.par}</span>
-    </div>`).join('');
+// nearly invisible in some browsers). Reused by any course-y input.
+function attachCourseSuggest(input, box, onPick) {
+  const render = () => {
+    const q = input.value.trim().toLowerCase();
+    const exact = coursePars[q];
+    if (exact && onPick) onPick(exact);
+    // Empty field + focus = browse the whole course list; typing narrows it.
+    const pool = Object.values(coursePars).sort((a, b) => a.name.localeCompare(b.name));
+    const matches = q
+      ? pool.filter(c => c.name.toLowerCase().includes(q) && c.name.toLowerCase() !== q).slice(0, 6)
+      : pool;
+    box.classList.toggle('hidden', !matches.length);
+    box.innerHTML = matches.map(c =>
+      `<div class="suggest-item" data-course="${esc(c.name)}">
+        <span>${esc(c.name)}</span><span class="sg-par">par ${c.par}</span>
+      </div>`).join('');
+  };
+  input.addEventListener('input', render);
+  input.addEventListener('focus', render);
+  input.addEventListener('blur', () => setTimeout(() => box.classList.add('hidden'), 150));
+  box.addEventListener('mousedown', e => {
+    // mousedown beats blur, so the tap lands before the box hides
+    const item = e.target.closest('.suggest-item');
+    if (!item) return;
+    e.preventDefault();
+    input.value = item.dataset.course;
+    const hit = coursePars[item.dataset.course.toLowerCase()];
+    if (hit && onPick) onPick(hit);
+    box.classList.add('hidden');
+  });
 }
-courseInput.addEventListener('input', renderCourseSuggest);
-courseInput.addEventListener('focus', renderCourseSuggest);
-courseInput.addEventListener('blur', () => setTimeout(() => suggestBox.classList.add('hidden'), 150));
-suggestBox.addEventListener('mousedown', e => {
-  // mousedown beats blur, so the tap lands before the box hides
-  const item = e.target.closest('.suggest-item');
-  if (!item) return;
+attachCourseSuggest(
+  document.getElementById('round-course'),
+  document.getElementById('course-suggest'),
+  hit => { document.getElementById('round-par').value = hit.par; });
+attachCourseSuggest(
+  document.getElementById('profile-home'),
+  document.getElementById('home-suggest'));
+
+/* ---------- Profile ---------- */
+let pendingPhoto = null;
+
+function renderProfile() {
+  const me = myPlayer();
+  if (!me) return show('auth');
+  pendingPhoto = null;
+  document.getElementById('profile-photo').value = '';
+  document.getElementById('profile-motto').value = me.motto || '';
+  document.getElementById('profile-bio').value = me.bio || '';
+  document.getElementById('profile-club').value = me.favClub || '';
+  document.getElementById('profile-home').value = me.homeCourse || '';
+  document.getElementById('profile-avatar-preview').innerHTML = avatarHtml(me, 'avatar-lg');
+}
+
+document.getElementById('profile-photo').addEventListener('change', e => {
+  const f = e.target.files[0];
+  if (!f) return;
+  pendingPhoto = f;
+  document.getElementById('profile-avatar-preview').innerHTML =
+    `<img class="avatar avatar-lg" src="${URL.createObjectURL(f)}" alt="" />`;
+});
+
+document.getElementById('profile-form').addEventListener('submit', async e => {
   e.preventDefault();
-  courseInput.value = item.dataset.course;
-  const hit = coursePars[item.dataset.course.toLowerCase()];
-  if (hit) document.getElementById('round-par').value = hit.par;
-  suggestBox.classList.add('hidden');
+  const me = myPlayer();
+  if (!me) return;
+  const msg = document.getElementById('profile-msg');
+  const btn = e.target.querySelector('button[type="submit"]');
+  btn.disabled = true;
+  flash(msg, 'Saving…', 'ok');
+  try {
+    let avatarUrl = me.avatarUrl;
+    if (pendingPhoto) avatarUrl = await Store.uploadAvatar(pendingPhoto);
+    await Store.updateProfile(me.id, {
+      motto: document.getElementById('profile-motto').value.trim(),
+      bio: document.getElementById('profile-bio').value.trim(),
+      favClub: document.getElementById('profile-club').value.trim(),
+      homeCourse: document.getElementById('profile-home').value.trim(),
+      avatarUrl,
+    });
+    pendingPhoto = null;
+    flash(msg, '✅ Profile saved — looking sharp.', 'ok');
+    updateAuthUI();
+  } catch (err) {
+    flash(msg, 'Could not save: ' + err.message, 'err');
+  } finally {
+    btn.disabled = false;
+  }
 });
 
 document.getElementById('round-form').addEventListener('submit', async e => {
@@ -647,6 +766,12 @@ document.getElementById('player-form').addEventListener('submit', async e => {
 });
 
 /* ---------- Helpers ---------- */
+function avatarHtml(p, cls = '') {
+  return p.avatarUrl
+    ? `<img class="avatar ${cls}" src="${esc(p.avatarUrl)}" alt="" />`
+    : `<div class="avatar avatar-fb ${cls}">${esc((p.name || '?')[0].toUpperCase())}</div>`;
+}
+
 function esc(str) {
   return String(str).replace(/[&<>"']/g, c =>
     ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));

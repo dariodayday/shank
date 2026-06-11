@@ -146,7 +146,7 @@ main { max-width: 560px; margin: 0 auto; padding: 22px 16px; }
 .field > span { font-size: 13px; font-weight: 600; color: var(--green-dark); }
 .field-row { display: flex; gap: 12px; }
 .field-row .field { flex: 1; }
-input, select {
+input, select, textarea {
   font-size: 16px; /* prevents iOS zoom */
   padding: 13px 14px;
   border: 1.5px solid var(--line);
@@ -157,8 +157,9 @@ input, select {
   font-family: inherit;
   transition: border-color .15s ease, box-shadow .15s ease;
 }
-input::placeholder { color: #a9b6ac; }
-input:focus, select:focus { outline: none; border-color: var(--green-light); box-shadow: 0 0 0 4px rgba(31,138,76,.14); }
+textarea { resize: vertical; min-height: 76px; }
+input::placeholder, textarea::placeholder { color: #a9b6ac; }
+input:focus, select:focus, textarea:focus { outline: none; border-color: var(--green-light); box-shadow: 0 0 0 4px rgba(31,138,76,.14); }
 .form-inline { flex-direction: row; align-items: center; }
 .form-inline input { flex: 1; }
 
@@ -241,6 +242,36 @@ input:focus, select:focus { outline: none; border-color: var(--green-light); box
 }
 .round-del:hover { color: var(--danger); background: #fbeae7; }
 .round-del:active { background: #f6d9d4; color: var(--danger); }
+
+/* ===== Avatars & profiles ===== */
+.avatar {
+  width: 36px; height: 36px; border-radius: 50%; object-fit: cover;
+  flex: none; background: var(--fairway); border: 1.5px solid #d3e6d8;
+}
+.avatar-fb {
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 800; color: var(--green); font-size: 15px;
+}
+.avatar-lg { width: 80px; height: 80px; font-size: 32px; }
+.lb-motto { font-size: 12px; font-style: italic; color: var(--green-light); margin-top: 1px; }
+
+.photo-row { display: flex; align-items: center; gap: 16px; }
+.btn-secondary {
+  background: #fff; color: var(--green); border: 1.5px solid var(--green-light);
+  box-shadow: none; display: inline-block;
+}
+.btn-secondary:hover { background: var(--fairway); }
+.photo-hint { font-size: 12px; margin-top: 8px; }
+
+.detail-head { display: flex; align-items: flex-start; gap: 14px; margin-top: 12px; }
+.detail-head-text { min-width: 0; padding-top: 4px; }
+.about-bio { font-size: 14.5px; margin-top: 4px; }
+.about-chips { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+.about-chip {
+  background: #fff; border: 1px solid var(--line); border-radius: 999px;
+  padding: 6px 12px; font-size: 13px; font-weight: 600; color: var(--green-dark);
+}
+.edit-profile { margin-top: 12px; }
 
 /* ===== Course suggestion dropdown ===== */
 .field-suggest { position: relative; }
