@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#0b6b3a" />
+  <title>Shank — track your rounds, own your bad shots</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⛳</text></svg>" />
+</head>
+<body>
+  <!-- Top bar -->
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark">⛳</span>
+      <span class="brand-name">Shank</span>
+    </div>
+    <span class="brand-tag">own your bad shots</span>
+  </header>
+
+  <main id="app">
+    <!-- ===== LEADERBOARD VIEW ===== -->
+    <section id="view-leaderboard" class="view">
+      <h1 class="view-title">Season Leaderboard</h1>
+      <p class="view-sub" id="leaderboard-sub">Ranked by handicap — lowest wins.</p>
+      <div id="leaderboard-list" class="card-list"></div>
+      <div id="leaderboard-empty" class="empty hidden">
+        <p class="empty-emoji">🏌️</p>
+        <p>No rounds logged yet.</p>
+        <p class="muted">Add some players, then log a round to start the season.</p>
+      </div>
+    </section>
+
+    <!-- ===== ADD ROUND VIEW ===== -->
+    <section id="view-add" class="view hidden">
+      <h1 class="view-title">Add a Round</h1>
+      <form id="round-form" class="form">
+        <label class="field">
+          <span>Player</span>
+          <select id="round-player" required></select>
+        </label>
+        <label class="field">
+          <span>Course <small class="muted">(optional)</small></span>
+          <input id="round-course" type="text" placeholder="e.g. Pine Valley muni" />
+        </label>
+        <div class="field-row">
+          <label class="field">
+            <span>Your score</span>
+            <input id="round-score" type="number" inputmode="numeric" min="18" max="200" placeholder="86" required />
+          </label>
+          <label class="field">
+            <span>Course par</span>
+            <input id="round-par" type="number" inputmode="numeric" min="27" max="80" value="72" />
+          </label>
+        </div>
+        <label class="field">
+          <span>Date</span>
+          <input id="round-date" type="date" required />
+        </label>
+        <button type="submit" class="btn btn-primary">Save round</button>
+        <p id="round-msg" class="form-msg"></p>
+      </form>
+    </section>
+
+    <!-- ===== PLAYERS VIEW ===== -->
+    <section id="view-players" class="view hidden">
+      <h1 class="view-title">Players</h1>
+      <form id="player-form" class="form form-inline">
+        <input id="player-name" type="text" placeholder="Add a buddy's name" maxlength="20" required />
+        <button type="submit" class="btn btn-primary">Add</button>
+      </form>
+      <div id="players-list" class="card-list"></div>
+      <div id="players-empty" class="empty hidden">
+        <p class="empty-emoji">👥</p>
+        <p>No players yet — add your crew above.</p>
+      </div>
+    </section>
+
+    <!-- ===== PLAYER DETAIL VIEW ===== -->
+    <section id="view-detail" class="view hidden">
+      <button class="back-btn" data-nav="players">← Players</button>
+      <h1 class="view-title" id="detail-name">Player</h1>
+      <div class="stat-grid" id="detail-stats"></div>
+      <h2 class="section-h">Round history</h2>
+      <div id="detail-rounds" class="card-list"></div>
+      <button class="btn btn-danger btn-block" id="detail-delete">Remove player</button>
+    </section>
+  </main>
+
+  <!-- Bottom nav -->
+  <nav class="tabbar">
+    <button class="tab is-active" data-nav="leaderboard">
+      <span class="tab-ico">🏆</span><span>Board</span>
+    </button>
+    <button class="tab tab-add" data-nav="add">
+      <span class="tab-ico">＋</span><span>Round</span>
+    </button>
+    <button class="tab" data-nav="players">
+      <span class="tab-ico">👥</span><span>Players</span>
+    </button>
+  </nav>
+
+  <footer class="footer">Shank v0.2.0 · shared with your crew</footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
