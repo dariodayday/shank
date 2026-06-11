@@ -278,6 +278,10 @@ document.querySelector('.brand').addEventListener('click', () => location.reload
 
 /* ---------- Version history ---------- */
 const CHANGELOG = [
+  { v: '0.5.2', title: 'Course memory', notes: [
+    'Typing a course suggests ones the crew has played',
+    'Picking a known course fills in its par automatically',
+  ]},
   { v: '0.5.1', title: 'No mystery rounds', notes: [
     'Course is now required when logging a round',
   ]},
@@ -477,6 +481,10 @@ function bindPlayerTaps(container) {
 }
 
 /* ---------- Add Round form ---------- */
+// Courses the crew has played, with the par used last time: typing a known
+// course suggests it, and picking it auto-fills the par.
+let coursePars = {};
+
 function prepAddForm() {
   const me = myPlayer();
   document.getElementById('add-gate').classList.toggle('hidden', !!me);
@@ -487,7 +495,23 @@ function prepAddForm() {
   sel.innerHTML = `<option value="${me.id}">${esc(me.name)}</option>`;
   const dateInput = document.getElementById('round-date');
   if (!dateInput.value) dateInput.value = todayStr();
+
+  coursePars = {};
+  Store.rounds()
+    .slice()
+    .sort((a, b) => (a.date < b.date ? -1 : 1)) // oldest first, newest par wins
+    .forEach(r => {
+      const name = (r.course || '').trim();
+      if (name) coursePars[name.toLowerCase()] = { name, par: r.par || 72 };
+    });
+  document.getElementById('course-list').innerHTML =
+    Object.values(coursePars).map(c => `<option value="${esc(c.name)}"></option>`).join('');
 }
+
+document.getElementById('round-course').addEventListener('input', e => {
+  const hit = coursePars[e.target.value.trim().toLowerCase()];
+  if (hit) document.getElementById('round-par').value = hit.par;
+});
 
 document.getElementById('round-form').addEventListener('submit', async e => {
   e.preventDefault();
